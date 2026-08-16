@@ -3,6 +3,7 @@ name: Hello Crew
 on:
   push:
     branches: [main]
+
   workflow_dispatch:
     inputs:
       greeting:
@@ -13,12 +14,13 @@ on:
 jobs:
   say-hello:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out the blueprint
         uses: actions/checkout@v4
 
       - name: Report for duty
-        run: echo "{{ github.event.inputs.greeting || 'The crew has arrived on site.' }}"
+        run: echo "${{ inputs.greeting || 'The crew has arrived on site.' }}"
 
       - name: Show today's date
         run: date
