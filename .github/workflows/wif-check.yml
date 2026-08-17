@@ -1,0 +1,31 @@
+name: WIF Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required — this is what lets GitHub mint the OIDC token
+
+jobs:
+  authenticate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the blueprint
+        uses: actions/checkout@v7
+
+      - name: Flash the badge
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Prove it — list storage buckets
+        run: gcloud storage buckets list --project=${{ vars.GCP_PROJECT_ID }}
