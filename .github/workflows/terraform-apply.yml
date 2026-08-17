@@ -1,7 +1,6 @@
-name: Terraform Apply with different SA
+name: Terraform Apply with different SA03
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 permissions:
   contents: read
