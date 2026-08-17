@@ -8,7 +8,7 @@ on:
     inputs:
       greeting:
         description: "Message for the crew"
-        required: false
+        required: true
         default: "Reporting for duty."
 
 jobs:
