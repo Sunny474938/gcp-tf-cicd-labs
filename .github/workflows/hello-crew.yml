@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Check out the blueprint
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Report for duty
         run: echo "${{ inputs.greeting || 'The crew has arrived on site.' }}"
