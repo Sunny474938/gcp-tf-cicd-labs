@@ -1,0 +1,75 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+env:
+  TF_IN_AUTOMATION: "1"
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the blueprint
+        uses: actions/checkout@v7
+
+      - name: Flash the badge
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: true
+
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform init
+        run: terraform init -backend-config="bucket=${{ vars.GCP_PROJECT_ID }}-tf-state" -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+
+      - name: Post plan to PR
+        uses: actions/github-script@v7
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+          FMT_OUTCOME: ${{ steps.fmt.outcome }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+        with:
+          script: |
+            let output = '#### Terraform Plan Review \n\n';
+            output += 'Format check: `' + process.env.FMT_OUTCOME + '`\n';
+            output += 'Plan status: `' + process.env.PLAN_OUTCOME + '`\n\n';
+            output += '\n\n';
+            output += '```terraform\n' + process.env.PLAN + '\n```\n\n';
+            output += '';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Fail the job if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
